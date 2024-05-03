@@ -1,54 +1,46 @@
+
 from pathlib import Path
 import win32com.client
 import win32print
-import win32ui
 
-# Printer name: HP LaserJet MFP M426fdn (5F550F)
 from printerconfig import get_printer
-printer = get_printer()
 
-#create output folder
-output_dir = Path.cwd() / "..//output"
-# output_dir.mkdir(parents=True, exist_ok=True)
+def print_file(file_path, printer_handler):
+    try:
+        hprinter = printer_handler
+        printer_info = win32print.GetPrinter(hprinter, 2)
+        printer_name = printer_info["pPrinterName"]
+        print(f"Printing '{file_path}' on printer '{printer_name}'...")
+        win32print.StartDocPrinter(hprinter, 1, ("Print Job", None, "RAW"))
+        win32print.StartPagePrinter(hprinter)
+        with open(file_path, "rb") as f:
+            win32print.WritePrinter(hprinter, f.read())
+        win32print.EndPagePrinter(hprinter)
+        win32print.EndDocPrinter(hprinter)
+        print("File printed successfully.")
+    except Exception as e:
+        print(f"Error printing '{file_path}': {e}")
 
-# Connect to Outlook
-outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+def main():
+    output_dir = Path.cwd() / "output"
+    outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+    inbox = outlook.Folders("mokdimprinting@outlook.com").Folders("Inbox")
+    messages = inbox.Items
+    for message in messages:
+        subject = message.Subject
+        attachments = message.Attachments
 
-# Connect to folder
-# inbox = outlook.GetDefaultFolder(6)
+        if attachments.Count > 0:
+            target_folder = output_dir / str(subject)
+            target_folder.mkdir(parents=True, exist_ok=True)
+            for attachment in attachments:
+                attachment.SaveAsFile(target_folder / attachment.FileName)
+                cur_file_path = target_folder / attachment.FileName
+                printer_handler = get_printer()
+                if printer_handler:
+                    print_file(cur_file_path, printer_handler)
+                else:
+                    print("Printer not available. Skipping printing.")
 
-# RUN CODE EVERY 1 MINUTES TO CHECK FOR NEW EMAIL OR PING SERVER WHEN NEW EMAIL ENTERS SYSTME
-# LOG INFORMATION ABOUT THE PROCESS
-inbox = outlook.Folders("mokdimprinting@outlook.com").Folders("Inbox")
-
-# Get messages
-messages = inbox.Items
-
-# Iterate over messages
-for message in messages:
-    subject = message.Subject
-    body = message.body
-    attachments = message.Attachments
-    
-    if (attachments.count > 0): # save message only if it has attachments
-        # Save message and files information
-        target_folder = output_dir / str(subject)
-        target_folder.mkdir(parents=True, exist_ok=True)
-        
-        # Write body to text file (FUTURE DEVELOPMENT)
-        # Path(target_folder / "body.txt").write_text(str(body))
-        
-        # Save attachments
-        for attachment in attachments:
-            attachment.SaveAsFile(target_folder / str(attachment))
-            cur_file = open(Path.cwd() / "..//output" / target_folder / attachment.FileName, 'r')
-            printer.StartDoc(cur_file)
-            printer.StartPage()
-            printer.EndPage()
-            printer.EndDoc()
-            
-        # Print attachments
-        
-        # Delete attachments from output folder if print was successful
-        
-        # Delete file if print was successful
+if __name__ == "__main__":
+    main()

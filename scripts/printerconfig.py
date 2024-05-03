@@ -1,15 +1,18 @@
-from pathlib import Path
-import win32com.client
-import win32print
-import win32ui
+# printerconfig.py
 
-# Printer config
-# When converting to prod, connect to the printer once at the beginning and then run the scraping and printing code
-printer_name = "HP LaserJet MFP M426fdn (5F550F)"
-printer_handler = win32print.OpenPrinter(printer_name)
-default_printer_info = win32print.GetPrinter(printer_handler, 2)
-printer_dc = win32ui.CreateDC()
-printer = printer_dc.CreatePrinterDC(printer_name)
+import win32print
 
 def get_printer():
-    return printer
+    printer_name = "HP97EA39 (HP OfficeJet Pro 8020 series)"  # Replace with your printer name
+    try:
+        printer_handler = win32print.OpenPrinter(printer_name)
+        return printer_handler
+    except Exception as e:
+        print(f"Error opening printer '{printer_name}': {e}")
+        return None
+
+# Usage example:
+# printer_handler = get_printer()
+# if printer_handler:
+#     # Use the printer for printing
+#     # ...
