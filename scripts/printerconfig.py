@@ -1,9 +1,12 @@
 # printerconfig.py
-
+import os
+from dotenv import load_dotenv
 import win32print
 
+# get printer name from .env file
+printer_name = os.getenv("PRINTER_NAME")
+
 def get_printer():
-    printer_name = "HP97EA39 (HP OfficeJet Pro 8020 series)"  # Replace with your printer name
     try:
         printer_handler = win32print.OpenPrinter(printer_name)
         return printer_handler
